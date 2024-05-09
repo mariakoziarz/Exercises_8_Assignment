@@ -1,28 +1,23 @@
-#
-# This is the server logic of a Shiny web application. You can run the
-# application by clicking 'Run App' above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    https://shiny.posit.co/
-#
-
 library(shiny)
+library(ggplot2)
+library(tidyr)
 
-# Define server logic required to draw a histogram
-function(input, output, session) {
+genes<-read.csv("TPMs_table_100genes.csv")
+genes_long<-pivot_longer(data=genes,
+                         cols=colnames(genes)[-1],
+                         values_to = "TPMs",
+                         names_to = "Sample")
 
-    output$distPlot <- renderPlot({
-
-        # generate bins based on input$bins from ui.R
-        x    <- faithful[, 2]
-        bins <- seq(min(x), max(x), length.out = input$bins + 1)
-
-        # draw the histogram with the specified number of bins
-        hist(x, breaks = bins, col = 'darkgray', border = 'white',
-             xlab = 'Waiting time to next eruption (in mins)',
-             main = 'Histogram of waiting times')
-
-    })
-
-}
+shinyServer(function(input, output, session){
+  
+  updateSelectInput(session, "gene", choices=genes_long$GeneID)
+  
+  
+  output$geneExpressionPlot<-renderPlot({
+    
+    gene_epression<-genes_long[genes_long$GeneID==input$gene, ]
+    
+    ggplot(gene_expression, aes(x=Sample,y=TPMs) )+
+      geom_violin(color="black", aes(fill=Expression))
+  })
+})
